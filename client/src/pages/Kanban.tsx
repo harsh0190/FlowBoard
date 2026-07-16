@@ -71,7 +71,7 @@ export default function Kanban() {
 
   const [search, setSearch] = useState("");
 
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy] = useState("newest");
 
   const [priorityFilter, setPriorityFilter] = useState("all");
 
