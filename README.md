@@ -73,5 +73,3 @@ npm run dev
 Contributions are welcome! Feel free to open an issue or submit a Pull Request.
 
 If you found this project helpful, consider giving it a ⭐ on GitHub.
-
----
