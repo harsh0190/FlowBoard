@@ -66,8 +66,8 @@ export default function Home() {
 
         {/* Hero */}
 
-        <section className="mx-auto flex max-w-7xl flex-col items-center px-6 py-24 text-center">
-          <h1 className="max-w-4xl text-6xl font-bold leading-tight">
+        <section className="mx-auto flex max-w-7xl flex-col items-center px-6 py-12 text-center">
+          <h1 className="max-w-4xl text-4xl font-bold leading-tight">
             Manage Projects.
             <br />
             Collaborate Better.
@@ -95,7 +95,7 @@ export default function Home() {
         {/* Features */}
 
         <section className="mx-auto max-w-7xl px-6 pb-24">
-          <h2 className="mb-12 text-center text-4xl font-bold">Features</h2>
+          <h2 className="mb-12 text-center text-3xl font-bold">Features</h2>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
