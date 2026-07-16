@@ -25,7 +25,7 @@ It helps teams manage workspaces, projects, tasks, members, and real-time collab
   </tr>
   <tr>
     <td><img src="./demo/projects.jpg" alt="Projects" width="100%"></td>
-    <td><img src="./demo/kanban.jpg" alt="Kanban" width="100%"></td>cx
+    <td><img src="./demo/kanban.jpg" alt="Kanban" width="100%"></td>
   </tr>
 </table>
 
