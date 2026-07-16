@@ -3,6 +3,7 @@ import { Response } from "express";
 import Task from "../models/Task";
 import Project from "../models/Project";
 import Workspace from "../models/Workspace";
+import { io } from "../server";
 
 /* ============================================================
    CREATE PROJECT
@@ -41,6 +42,9 @@ export const createProject = async (req: any, res: Response) => {
       owner: req.user._id,
       members: members || [],
     });
+    io.emit("notification", {
+  message: `Project "${project.title}" created.`,
+});
 
     const populatedProject = await Project.findById(project._id)
       .populate("owner", "name email")
@@ -186,6 +190,9 @@ export const updateProject = async (req: any, res: Response) => {
     project.color = req.body.color ?? project.color;
 
     await project.save();
+    io.emit("notification", {
+  message: `Project "${project.title}" updated.`,
+});
 
     return res.json({
       message: "Project updated successfully.",
@@ -232,7 +239,9 @@ export const deleteProject = async (req: any, res: Response) => {
     });
 
     await project.deleteOne();
-
+    io.emit("notification", {
+  message: `Project "${project.title}" deleted.`,
+});
     return res.json({
       message: "Project deleted successfully.",
     });

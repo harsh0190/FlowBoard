@@ -104,6 +104,9 @@ export const createTask = async (
     });
 
    await updateProjectProgress(String(project._id));
+   io.emit("notification", {
+  message: `Task "${task.title}" created.`,
+});
 
     const populatedTask =
       await Task.findById(task._id)
@@ -309,6 +312,9 @@ export const updateTask = async (
       task.dueDate;
 
     await task.save();
+    io.emit("notification", {
+  message: `Task "${task.title}" updated.`,
+});
 
     await updateProjectProgress(String(project._id));
 
@@ -401,7 +407,9 @@ export const deleteTask = async (
 
     await updateProjectProgress(projectId);
 
-    
+    io.emit("notification", {
+  message: `Task "${task.title}" deleted.`,
+});
 
     return res.json({
       message: "Task deleted successfully.",
@@ -446,6 +454,9 @@ export const addComment = async (
     });
 
     await task.save();
+    io.emit("notification", {
+  message: `New comment added to "${task.title}".`,
+});
 
     const updatedTask = await Task.findById(task._id)
       .populate("assignedTo", "name email")

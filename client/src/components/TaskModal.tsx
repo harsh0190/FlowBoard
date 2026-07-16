@@ -32,6 +32,7 @@ export default function TaskModal({
     dispatch(updateTask(updated));
 
     setComment("");
+    
   };
 
   return (

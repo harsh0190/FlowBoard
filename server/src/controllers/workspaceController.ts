@@ -3,6 +3,7 @@ import User from "../models/User";
 import Workspace from "../models/Workspace";
 import Project from "../models/Project";
 import Task from "../models/Task";
+import { io } from "../server";
 
 /* ============================================================
    CREATE WORKSPACE
@@ -33,6 +34,10 @@ export const createWorkspace = async (req: any, res: Response) => {
         },
       ],
     });
+
+    io.emit("notification", {
+  message: `Workspace "${workspace.name}" created.`,
+});
 
     const populatedWorkspace = await Workspace.findById(workspace._id)
       .populate("owner", "name email")
@@ -129,6 +134,9 @@ export const updateWorkspace = async (req: any, res: Response) => {
     }
 
     await workspace.save();
+    io.emit("notification", {
+  message: `Workspace "${workspace.name}" created.`,
+});
 
     await workspace.populate([
       {
@@ -169,6 +177,9 @@ export const deleteWorkspace = async (req: any, res: Response) => {
     });
 
     await workspace.deleteOne();
+    io.emit("notification", {
+  message: `Workspace "${workspace.name}" created.`,
+});
 
     return res.status(200).json({
       message: "Workspace deleted successfully.",
@@ -230,6 +241,9 @@ export const inviteMember = async (req: any, res: Response) => {
     });
 
     await workspace.save();
+    io.emit("notification", {
+  message: `${user.name} joined the workspace.`,
+});
 
     const updatedWorkspace = await Workspace.findById(workspace._id)
       .populate("owner", "name email")
@@ -265,8 +279,6 @@ export const removeMember = async (req: any, res: Response) => {
     workspace.members = workspace.members.filter(
       (member: any) => member.user.toString() !== memberId,
     );
-
-    await workspace.save();
 
     const updatedWorkspace = await Workspace.findById(workspace._id)
       .populate("owner", "name email")
