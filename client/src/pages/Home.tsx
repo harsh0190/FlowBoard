@@ -55,11 +55,12 @@ export default function Home() {
 
             <div className="flex gap-3">
               <Link
-                to="/auth"
-                className="rounded-lg border border-slate-700 px-5 py-2 transition hover:bg-slate-800"
-              >
-                Login
-              </Link>
+              to="/auth"
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-4 font-semibold transition hover:bg-blue-700"
+            >
+              Get Started
+              <ArrowRight size={20} />
+            </Link>
             </div>
           </div>
         </header>
@@ -80,22 +81,12 @@ export default function Home() {
             teams organize workspaces, projects and tasks using an intuitive
             Kanban board.
           </p>
-
-          <div className="mt-10 flex gap-4">
-            <Link
-              to="/auth?mode=register"
-              className="flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-4 font-semibold transition hover:bg-blue-700"
-            >
-              Get Started
-              <ArrowRight size={20} />
-            </Link>
-          </div>
         </section>
 
         {/* Features */}
 
         <section className="mx-auto max-w-7xl px-6 pb-24">
-          <h2 className="mb-12 text-center text-3xl font-bold">Features</h2>
+          <h2 className="mb-12  text-3xl font-bold">Features</h2>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
