@@ -14,7 +14,7 @@ export default function Sidebar() {
   const links = [
     {
       name: "Dashboard",
-      path: "/",
+      path: "/dashboard",
       icon: LayoutDashboard,
     },
 
@@ -54,7 +54,7 @@ p-6
 "
     >
       <h1
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/dashboard")}
         className="
 text-2xl
 font-bold

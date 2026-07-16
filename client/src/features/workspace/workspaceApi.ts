@@ -1,87 +1,107 @@
 import api from "../../api/axios";
 
+/* ============================================================
+   CREATE WORKSPACE
+============================================================ */
 
+export const createWorkspaceApi = async (
+  name: string,
+  description: string = ""
+) => {
+  const response = await api.post("/api/workspaces", {
+    name,
+    description,
+  });
 
-// CREATE WORKSPACE
-
-export const createWorkspaceApi =
-async(name:string)=>{
-
-
-const response =
-await api.post(
-
-"/api/workspaces",
-
-{
-name
-}
-
-);
-
-
-return response.data;
-
-
+  return response.data;
 };
 
+/* ============================================================
+   GET ALL WORKSPACES
+============================================================ */
 
+export const getWorkspacesApi = async () => {
+  const response = await api.get("/api/workspaces");
 
-
-
-
-// GET WORKSPACES
-
-
-export const getWorkspacesApi =
-async()=>{
-
-
-const response =
-await api.get(
-
-"/api/workspaces"
-
-);
-
-
-return response.data;
-
-
+  return response.data;
 };
 
+/* ============================================================
+   GET SINGLE WORKSPACE
+============================================================ */
 
+export const getWorkspaceApi = async (
+  workspaceId: string
+) => {
+  const response = await api.get(
+    `/api/workspaces/${workspaceId}`
+  );
 
+  return response.data;
+};
 
+/* ============================================================
+   UPDATE WORKSPACE
+============================================================ */
 
+export const updateWorkspaceApi = async (
+  workspaceId: string,
+  data: {
+    name?: string;
+    description?: string;
+  }
+) => {
+  const response = await api.put(
+    `/api/workspaces/${workspaceId}`,
+    data
+  );
 
+  return response.data;
+};
 
-// INVITE MEMBER
+/* ============================================================
+   DELETE WORKSPACE
+============================================================ */
 
+export const deleteWorkspaceApi = async (
+  workspaceId: string
+) => {
+  const response = await api.delete(
+    `/api/workspaces/${workspaceId}`
+  );
 
-export const inviteMemberApi =
-async(
+  return response.data;
+};
 
-workspaceId:string,
+/* ============================================================
+   INVITE MEMBER
+============================================================ */
 
-email:string
+export const inviteMemberApi = async (
+  workspaceId: string,
+  email: string,
+) => {
+  const response = await api.post(
+    `/api/workspaces/${workspaceId}/invite`,
+    {
+      email,
+    }
+  );
 
-)=>{
+  return response.data;
+};
 
+/* ============================================================
+   REMOVE MEMBER
+============================================================ */
 
-const response =
-await api.post(
+export const removeMemberApi = async (
+  workspaceId: string,
+  memberId: string
+) => {
+  const response = await api.delete(
+    `/api/workspaces/${workspaceId}/member/${memberId}`
+  );
 
-`/api/workspaces/${workspaceId}/invite`,
-
-{
-email
-}
-
-);
-
-
-return response.data;
-
-
+  return response.data;
 };

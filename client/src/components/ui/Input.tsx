@@ -1,21 +1,10 @@
-import {type InputHTMLAttributes} from "react";
+import { type InputHTMLAttributes } from "react";
 
-
-export default function Input(
-
-props:InputHTMLAttributes<HTMLInputElement>
-
-){
-
-
-return (
-
-<input
-
-{...props}
-
-
-className="
+export default function Input(props: InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      className="
 w-full
 rounded-lg
 border
@@ -28,9 +17,6 @@ focus:ring-2
 focus:ring-indigo-500
 
 "
-
-/>
-
-)
-
+    />
+  );
 }

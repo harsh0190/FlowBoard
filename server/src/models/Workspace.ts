@@ -1,83 +1,69 @@
-import mongoose, {
-    Schema,
-    Document
-} from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
+export interface IWorkspace extends Document {
+  name: string;
 
-export interface IWorkspace extends Document{
+  description: string;
 
-    name:string;
+  owner: mongoose.Types.ObjectId;
 
-    owner:mongoose.Types.ObjectId;
+  members: {
+    user: mongoose.Types.ObjectId;
+    role: "admin" | "member";
+    joinedAt: Date;
+  }[];
 
-    members:{
-        user:mongoose.Types.ObjectId;
-        role:"admin"|"member";
-    }[];
-
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-
-
-const workspaceSchema =
-new Schema<IWorkspace>({
-
-    name:{
-        type:String,
-        required:true
+const workspaceSchema = new Schema<IWorkspace>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
 
-
-    owner:{
-
-        type:Schema.Types.ObjectId,
-
-        ref:"User",
-
-        required:true
-
+    description: {
+      type: String,
+      default: "",
+      trim: true,
     },
 
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
-    members:[
+    members: [
+      {
+        user: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
 
-        {
+        role: {
+          type: String,
+          enum: ["admin", "member"],
+          default: "member",
+        },
 
-            user:{
-
-                type:Schema.Types.ObjectId,
-
-                ref:"User"
-
-            },
-
-
-            role:{
-
-                type:String,
-
-                enum:[
-                    "admin",
-                    "member"
-                ],
-
-                default:"member"
-
-            }
-
-        }
-
-    ]
-
-
-},
-{
-    timestamps:true
-});
-
-
+        joinedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+);
 
 export default mongoose.model<IWorkspace>(
-    "Workspace",
-    workspaceSchema
+  "Workspace",
+  workspaceSchema
 );

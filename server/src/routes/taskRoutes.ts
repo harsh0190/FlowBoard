@@ -1,85 +1,87 @@
 import express from "express";
 
-
 import {
-
-createTask,
-getTasks,
-updateTaskStatus,
-addComment
-
+  createTask,
+  getTasks,
+  getTask,
+  updateTask,
+  deleteTask,
+  updateTaskStatus,
+  addComment,
+  filterTasks,
 } from "../controllers/taskController";
 
+import { protect } from "../middleware/authMiddleware";
 
-import {
+const router = express.Router();
 
-protect
+/* ============================================================
+   TASK CRUD
+============================================================ */
 
-} from "../middleware/authMiddleware";
-
-
-
-const router =
-express.Router();
-
-
-
-router.use(protect);
-
-
-
-
-// Create task
-
+// Create Task
 router.post(
-
-"/project/:projectId",
-
-createTask
-
+  "/project/:projectId",
+  protect,
+  createTask
 );
 
-
-
-
-// Get tasks
-
+// Get All Tasks of Project
 router.get(
-
-"/project/:projectId",
-
-getTasks
-
+  "/project/:projectId",
+  protect,
+  getTasks
 );
 
+// Filter Tasks
+router.get(
+  "/project/:projectId/filter",
+  protect,
+  filterTasks
+);
 
+// Get Single Task
+router.get(
+  "/:taskId",
+  protect,
+  getTask
+);
 
+// Update Task
+router.put(
+  "/:taskId",
+  protect,
+  updateTask
+);
 
-// Kanban update
+// Delete Task
+router.delete(
+  "/:taskId",
+  protect,
+  deleteTask
+);
 
+/* ============================================================
+   TASK STATUS
+============================================================ */
 
+// Drag & Drop
 router.patch(
-
-"/:taskId/status",
-
-updateTaskStatus
-
+  "/:taskId/status",
+  protect,
+  updateTaskStatus
 );
 
 
+/* ============================================================
+   COMMENTS
+============================================================ */
 
-
-// Comments
-
-
+// Add Comment
 router.post(
-
-"/:taskId/comment",
-
-addComment
-
+  "/:taskId/comment",
+  protect,
+  addComment
 );
-
-
 
 export default router;

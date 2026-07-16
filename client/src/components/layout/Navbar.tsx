@@ -1,22 +1,101 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { Search, User, Settings, LogOut } from "lucide-react";
+import {
+  User,
+  Settings,
+  LogOut,
+} from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../../hooks/redux";
 import NotificationMenu from "./NotificationMenu";
 
 import { logout } from "../../features/auth/authSlice";
 
-import { useNavigate } from "react-router-dom";
+const pageDetails: Record<
+  string,
+  {
+    title: string;
+    subtitle: string;
+  }
+> = {
+  "/dashboard": {
+    title: "Dashboard",
+    subtitle: "Workspace Overview",
+  },
+
+  "/workspaces": {
+    title: "Workspaces",
+    subtitle: "Manage your workspaces",
+  },
+
+  "/projects": {
+    title: "Projects",
+    subtitle: "Manage your projects",
+  },
+
+  "/kanban": {
+    title: "Kanban Board",
+    subtitle: "Manage project workflow",
+  },
+
+  "/members": {
+    title: "Members",
+    subtitle: "Manage workspace members",
+  },
+
+  "/profile": {
+    title: "Profile",
+    subtitle: "Manage your profile",
+  },
+
+  "/settings": {
+    title: "Settings",
+    subtitle: "Application settings",
+  },
+};
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const dispatch = useAppDispatch();
 
   const navigate = useNavigate();
 
-  const { user } = useAppSelector((state) => state.auth);
+  const location = useLocation();
+
+  const { user } = useAppSelector(
+    (state) => state.auth
+  );
+
+  const page =
+    pageDetails[location.pathname] || {
+      title: "FlowBoard",
+      subtitle: "Project Management",
+    };
+    useEffect(() => {
+  function handleClickOutside(event: MouseEvent) {
+    if (
+      menuRef.current &&
+      !menuRef.current.contains(event.target as Node)
+    ) {
+      setOpen(false);
+    }
+  }
+
+  document.addEventListener(
+    "mousedown",
+    handleClickOutside
+  );
+
+  return () => {
+    document.removeEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+  };
+}, []);
 
   function handleLogout() {
     dispatch(logout());
@@ -29,7 +108,7 @@ export default function Navbar() {
   return (
     <header
       className="
-h-16
+h-20
 bg-white
 border-b
 
@@ -40,37 +119,35 @@ justify-between
 px-8
 "
     >
-      <div
-        className="
-hidden
-md:flex
+      {/* Left */}
 
-items-center
-gap-3
+      <div>
 
-bg-gray-100
-
-px-4
-py-2
-
-rounded-lg
-
-w-96
-"
-      >
-        <Search size={18} />
-
-        <input
-          placeholder="Search..."
+        <h1
           className="
-bg-transparent
-outline-none
-w-full
+text-3xl
+font-bold
+text-slate-900
 "
-        />
+        >
+          {page.title}
+        </h1>
+
+        <p
+          className="
+text-gray-500
+mt-1
+"
+        >
+          {page.subtitle}
+        </p>
+
       </div>
 
+      {/* Right */}
+
       <div
+      ref={menuRef}
         className="
 flex
 items-center
@@ -92,6 +169,7 @@ bg-indigo-600
 text-white
 
 font-bold
+
 cursor-pointer
 
 hover:bg-indigo-700
@@ -109,13 +187,13 @@ absolute
 right-0
 top-14
 
+w-56
+
 bg-white
 
 border
 rounded-xl
 shadow-lg
-
-w-56
 
 p-3
 
@@ -123,7 +201,10 @@ z-50
 "
           >
             <div className="p-3">
-              <p className="font-bold">{user?.name}</p>
+
+              <p className="font-bold">
+                {user?.name}
+              </p>
 
               <p
                 className="
@@ -133,23 +214,29 @@ text-gray-500
               >
                 {user?.email}
               </p>
+
             </div>
 
             <hr />
 
             <button
-              onClick={() => navigate("/profile")}
+              onClick={() =>
+                navigate("/profile")
+              }
               className="
 flex
-gap-3
 items-center
+gap-3
 
-p-3
-cursor-pointer
 w-full
 
-hover:bg-gray-100
+p-3
+
 rounded
+
+hover:bg-gray-100
+
+cursor-pointer
 "
             >
               <User size={18} />
@@ -157,16 +244,23 @@ rounded
             </button>
 
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() =>
+                navigate("/settings")
+              }
               className="
 flex
-gap-3
 items-center
-p-3
+gap-3
+
 w-full
-cursor-pointer
-hover:bg-gray-100
+
+p-3
+
 rounded
+
+hover:bg-gray-100
+
+cursor-pointer
 "
             >
               <Settings size={18} />
@@ -177,18 +271,20 @@ rounded
               onClick={handleLogout}
               className="
 flex
-gap-3
 items-center
+gap-3
+
+w-full
 
 p-3
 
-w-full
+rounded
 
 text-red-500
 
 hover:bg-red-50
+
 cursor-pointer
-rounded
 "
             >
               <LogOut size={18} />

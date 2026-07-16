@@ -1,80 +1,117 @@
-import { Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 
 import Workspace from "../models/Workspace";
+import Project from "../models/Project";
+import Task from "../models/Task";
 
+const getWorkspace = async (req: any) => {
+  // Workspace Routes
+  if (req.params.workspaceId) {
+    return Workspace.findById(req.params.workspaceId);
+  }
 
-export const isWorkspaceAdmin =
-async (
-    req:any,
-    res:Response,
-    next:NextFunction
-)=>{
+  // Project Routes
+  if (req.params.projectId) {
+    const project = await Project.findById(req.params.projectId);
 
+    if (!project) return null;
 
-const workspace =
-await Workspace.findById(
-    req.params.workspaceId
-);
+    return Workspace.findById(project.workspace);
+  }
 
+  // Task Routes
+  if (req.params.taskId) {
+    const task = await Task.findById(req.params.taskId);
 
+    if (!task) return null;
 
-if(!workspace){
+    const project = await Project.findById(task.project);
 
-return res
-.status(404)
-.json({
-message:"Workspace not found"
-});
+    if (!project) return null;
 
-}
+    return Workspace.findById(project.workspace);
+  }
 
+  return null;
+};
 
+/* ============================================================
+   WORKSPACE MEMBER
+============================================================ */
 
-const member =
-workspace.members.find(
+export const isWorkspaceMember = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const workspace = await getWorkspace(req);
 
-m =>
-m.user.toString()
-===
-req.user._id.toString()
+    if (!workspace) {
+      return res.status(404).json({
+        message: "Workspace not found.",
+      });
+    }
 
-);
+    const isMember = workspace.members.some(
+      (member: any) =>
+        member.user.toString() === req.user._id.toString()
+    );
 
+    if (!isMember) {
+      return res.status(403).json({
+        message: "Access denied.",
+      });
+    }
 
+    req.workspace = workspace;
 
-if(!member){
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      message: "Authorization failed.",
+      error,
+    });
+  }
+};
 
-return res
-.status(403)
-.json({
+/* ============================================================
+   WORKSPACE ADMIN
+============================================================ */
 
-message:"Not a workspace member"
+export const isWorkspaceAdmin = async (
+  req: any,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const workspace = await getWorkspace(req);
 
-});
+    if (!workspace) {
+      return res.status(404).json({
+        message: "Workspace not found.",
+      });
+    }
 
-}
+    const isAdmin = workspace.members.some(
+      (member: any) =>
+        member.user.toString() === req.user._id.toString() &&
+        member.role === "admin"
+    );
 
+    if (!isAdmin) {
+      return res.status(403).json({
+        message: "Only workspace admin can perform this action.",
+      });
+    }
 
+    req.workspace = workspace;
 
-if(member.role !== "admin"){
-
-
-return res
-.status(403)
-.json({
-
-message:"Admin access required"
-
-});
-
-}
-
-
-
-req.workspace = workspace;
-
-
-next();
-
-
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      message: "Authorization failed.",
+      error,
+    });
+  }
 };

@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
-
+import { useEffect, useMemo, useState } from "react";
 import { DndContext } from "@dnd-kit/core";
-
 import toast from "react-hot-toast";
 
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
@@ -9,15 +7,15 @@ import { useAppDispatch, useAppSelector } from "../hooks/redux";
 import { getWorkspacesApi } from "../features/workspace/workspaceApi";
 
 import {
-  setWorkspaces,
   setCurrentWorkspace,
+  setWorkspaces,
 } from "../features/workspace/workspaceSlice";
 
 import { getProjectsApi } from "../features/project/projectApi";
 
 import {
-  setProjects,
   setCurrentProject,
+  setProjects,
 } from "../features/project/projectSlice";
 
 import {
@@ -26,32 +24,27 @@ import {
   updateTaskStatusApi,
 } from "../features/task/taskApi";
 
-import { setTasks, updateTaskLocal } from "../features/task/taskSlice";
+import { setTasks, updateTask } from "../features/task/taskSlice";
 
 import KanbanColumn from "../components/KanbanColumn";
 
 import Input from "../components/ui/Input";
-
-import Modal from "../components/ui/Modal";
-
 import Button from "../components/ui/Button";
+import Modal from "../components/ui/Modal";
 
 const columns = [
   {
     id: "todo",
     title: "Todo",
   },
-
   {
     id: "in-progress",
     title: "In Progress",
   },
-
   {
     id: "review",
     title: "Review",
   },
-
   {
     id: "done",
     title: "Completed",
@@ -59,11 +52,10 @@ const columns = [
 ];
 
 export default function Kanban() {
+  useEffect(() => {
+  document.title = "Kanban | FlowBoard";
+}, []);
   const dispatch = useAppDispatch();
-
-  const [search, setSearch] = useState("");
-
-  const [open, setOpen] = useState(false);
 
   const { workspaces, currentWorkspace } = useAppSelector(
     (state) => state.workspace,
@@ -73,85 +65,142 @@ export default function Kanban() {
 
   const { tasks } = useAppSelector((state) => state.task);
 
-  const [form, setForm] = useState({
+  const [open, setOpen] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const [search, setSearch] = useState("");
+
+  const [sortBy, setSortBy] = useState("newest");
+
+  const [priorityFilter, setPriorityFilter] = useState("all");
+
+  const [form, setForm] = useState<{
+    title: string;
+    description: string;
+    priority: "low" | "medium" | "high";
+  }>({
     title: "",
-
     description: "",
-
     priority: "medium",
   });
 
-  // LOAD WORKSPACES
+  /* =====================================
+        LOAD WORKSPACES
+  ===================================== */
 
   useEffect(() => {
     async function load() {
       try {
         const data = await getWorkspacesApi();
 
-        dispatch(setWorkspaces(data));
-      } catch (error) {
-        console.log(error);
+dispatch(setWorkspaces(data));
+
+const savedWorkspaceId = localStorage.getItem("workspaceId");
+
+const savedWorkspace =
+  data.find((w: any) => w._id === savedWorkspaceId) || null;
+
+dispatch(
+  setCurrentWorkspace(
+    savedWorkspace || data[0] || null
+  )
+);
+      } catch {
+        toast.error("Unable to load workspaces.");
       }
     }
 
     load();
   }, [dispatch]);
 
-  // LOAD PROJECTS
+  /* =====================================
+        LOAD PROJECTS
+  ===================================== */
 
   useEffect(() => {
     async function load() {
       if (!currentWorkspace) return;
 
-      const data = await getProjectsApi(currentWorkspace._id);
+      try {
+        const data = await getProjectsApi(currentWorkspace._id);
 
-      dispatch(setProjects(data));
+        dispatch(setProjects(data));
 
-      dispatch(setTasks([]));
+        dispatch(setTasks([]));
+
+        dispatch(setCurrentProject(null));
+      } catch {
+        toast.error("Unable to load projects.");
+      }
     }
 
     load();
   }, [currentWorkspace, dispatch]);
 
-  // LOAD TASKS
+  /* =====================================
+        LOAD TASKS
+  ===================================== */
 
   useEffect(() => {
     async function load() {
       if (!currentProject) return;
 
-      const data = await getTasksApi(currentProject._id);
+      try {
+        const data = await getTasksApi(currentProject._id);
 
-      dispatch(setTasks(data));
+        dispatch(setTasks(data));
+      } catch {
+        toast.error("Unable to load tasks.");
+      }
     }
 
     load();
   }, [currentProject, dispatch]);
 
+  /* =====================================
+        CREATE TASK
+  ===================================== */
+
   async function createTask() {
     if (!currentProject) {
-      toast.error("Choose project first");
-
+      toast.error("Please select a project.");
       return;
     }
 
-    await createTaskApi(currentProject._id, form);
+    if (!form.title.trim()) {
+      toast.error("Task title is required.");
+      return;
+    }
 
-    toast.success("Task created");
+    try {
+      setLoading(true);
 
-    setOpen(false);
+      await createTaskApi(currentProject._id, form);
 
-    setForm({
-      title: "",
+      toast.success("Task created.");
 
-      description: "",
+      setOpen(false);
 
-      priority: "medium",
-    });
+      setForm({
+        title: "",
+        description: "",
+        priority: "medium",
+      });
 
-    const data = await getTasksApi(currentProject._id);
+      const data = await getTasksApi(currentProject._id);
 
-    dispatch(setTasks(data));
+      dispatch(setTasks(data));
+    } catch {
+      toast.error("Unable to create task.");
+    } finally {
+      setLoading(false);
+    }
   }
+
+  /* =====================================
+        DRAG & DROP
+  ===================================== */
 
   const handleDragEnd = async (event: any) => {
     const taskId = event.active.id;
@@ -162,207 +211,285 @@ export default function Kanban() {
 
     const currentTask = tasks.find((task) => task._id === taskId);
 
-    if (currentTask?.status === newStatus) return;
+    if (!currentTask) return;
 
     dispatch(
-      updateTaskLocal({
-        id: taskId,
-
+      updateTask({
+        ...currentTask,
         status: newStatus,
       }),
     );
 
-    await updateTaskStatusApi(
-      taskId,
-
-      newStatus,
-    );
+    try {
+      await updateTaskStatusApi(taskId, newStatus);
+    } catch {
+      toast.error("Unable to update task.");
+    }
   };
 
-  // SEARCH FIX
+  /* =====================================
+        FILTER
+  ===================================== */
 
-  const filteredTasks = tasks.filter((task: any) => {
-    const value = search.toLowerCase();
+  const filteredTasks = useMemo(() => {
+    let result = [...tasks];
 
-    return (
-      task.title?.toLowerCase().includes(value) ||
-      task.description?.toLowerCase().includes(value)
-    );
-  });
+    /* Search by Title */
+
+    if (search.trim()) {
+      result = result.filter((task: any) =>
+        task.title?.toLowerCase().includes(search.toLowerCase()),
+      );
+    }
+
+    /* Priority */
+
+    if (priorityFilter !== "all") {
+      result = result.filter((task: any) => task.priority === priorityFilter);
+    }
+
+    /* Sorting */
+
+    result.sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "oldest":
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+
+        case "priority": {
+          const order = {
+            high: 3,
+            medium: 2,
+            low: 1,
+          };
+
+          return (
+            order[b.priority as keyof typeof order] -
+            order[a.priority as keyof typeof order]
+          );
+        }
+
+        case "title":
+          return a.title.localeCompare(b.title);
+
+        default:
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+      }
+    });
+
+    return result;
+  }, [tasks, search, priorityFilter, sortBy]);
 
   return (
-    <div>
-      {/* HEADER */}
+    <div className="space-y-6">
+      {/* Toolbar */}
 
-      <div className="mb-10">
+      <div className="space-y-4">
+
+  {/* Row 1 */}
+
+  <div
+    className="
+flex
+items-center
+justify-between
+gap-4
+"
+  >
+    <div
+      className="
+flex
+items-center
+gap-4
+"
+    >
+      {/* Workspace */}
+
+      <select
+        value={currentWorkspace?._id || ""}
+        onChange={(e) => {
+          const workspace =
+            workspaces.find((w: any) => w._id === e.target.value) ?? null;
+
+          dispatch(setCurrentWorkspace(workspace));
+          if (workspace) {
+  localStorage.setItem("workspaceId", workspace._id);
+}
+        }}
+        className="
+w-56
+border
+rounded-xl
+px-4
+py-3
+outline-none
+cursor-pointer
+"
+      >
+        <option value="">Workspace</option>
+
+        {workspaces.map((w: any) => (
+          <option key={w._id} value={w._id}>
+            {w.name}
+          </option>
+        ))}
+      </select>
+
+      {/* Project */}
+
+      <select
+        value={currentProject?._id || ""}
+        onChange={(e) => {
+          const project =
+            projects.find((p: any) => p._id === e.target.value) ?? null;
+
+          dispatch(setCurrentProject(project));
+        }}
+        className="
+w-56
+border
+rounded-xl
+px-4
+py-3
+outline-none
+cursor-pointer
+"
+      >
+        <option value="">Project</option>
+
+        {projects.map((project: any) => (
+          <option
+            key={project._id}
+            value={project._id}
+          >
+            {project.title}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div
+      className="
+flex
+items-center
+gap-3
+"
+    >
+
+      <Button
+        onClick={() => setOpen(true)}
+      >
+        + Add Task
+      </Button>
+    </div>
+  </div>
+
+  {/* Row 2 */}
+
+  <div
+    className="
+flex
+items-center
+gap-4
+"
+  >
+    <Input
+      placeholder="Search tasks..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="flex-1"
+    />
+
+    <select
+      value={priorityFilter}
+      onChange={(e) => setPriorityFilter(e.target.value)}
+      className="
+w-48
+border
+rounded-xl
+px-4
+py-3
+outline-none
+cursor-pointer
+"
+    >
+      <option value="all">All Priority</option>
+
+      <option value="high">High</option>
+
+      <option value="medium">Medium</option>
+
+      <option value="low">Low</option>
+    </select>
+  </div>
+
+</div>
+            
+      {/* Empty State */}
+
+      {!currentProject ? (
         <div
           className="
-flex
-justify-between
-items-start
-gap-6
+rounded-2xl
+border
+bg-white
+py-20
+text-center
 "
         >
+          <h2
+            className="
+text-2xl
+font-semibold
+"
+          >
+            Select a Project
+          </h2>
+
+          <p
+            className="
+mt-2
+text-gray-500
+"
+          >
+            Choose a project to manage tasks.
+          </p>
+        </div>
+      ) : (
+        <DndContext onDragEnd={handleDragEnd}>
           <div
             className="
-space-y-6
-flex-1
-"
-          >
-            <div>
-              <h1
-                className="
-text-3xl
-font-bold
-"
-              >
-                Kanban Board
-              </h1>
-
-              <p
-                className="
-text-gray-500
-mt-2
-"
-              >
-                Manage Project Workflow
-              </p>
-            </div>
-
-            <div
-              className="
-flex
-gap-4
-items-center
-"
-            >
-              <select
-                value={currentWorkspace?._id || ""}
-                onChange={(e) => {
-                  const workspace = workspaces.find(
-                    (w: any) => w._id === e.target.value,
-                  );
-
-                  dispatch(setCurrentWorkspace(workspace));
-
-                  dispatch(setCurrentProject(null));
-                }}
-                className="
-border
-rounded-xl
-px-5
-py-3
-h-14
-cursor-pointer
-min-w-60
-"
-              >
-                <option value="">Choose Workspace</option>
-
-                {workspaces.map((w: any) => (
-                  <option key={w._id} value={w._id}>
-                    {w.name}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={currentProject?._id || ""}
-                onChange={(e) => {
-                  const project = projects.find(
-                    (p: any) => p._id === e.target.value,
-                  );
-
-                  dispatch(setCurrentProject(project));
-                }}
-                className="
-border
-rounded-xl
-px-5
-py-3
-h-14
-cursor-pointer
-min-w-60
-"
-              >
-                <option value="">Choose Project</option>
-
-                {projects.map((p: any) => (
-                  <option key={p._id} value={p._id}>
-                    {p.title}
-                  </option>
-                ))}
-              </select>
-
-              <Input
-                placeholder="Search tasks..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="
-h-14
-w-72
-"
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={() => setOpen(true)}
-            className="
-bg-indigo-600
-text-white
-
-h-12
-
-px-6
-
-rounded-xl
-
-font-semibold
-
-cursor-pointer
-
-hover:bg-indigo-700
-
-transition
-
-shrink-0
-"
-          >
-            + Add Task
-          </button>
-        </div>
-      </div>
-
-      <DndContext onDragEnd={handleDragEnd}>
-        <div
-          className="
 grid
-grid-cols-1
-md:grid-cols-4
 gap-6
+xl:grid-cols-4
 "
-        >
-          {columns.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              id={column.id}
-              title={column.title}
-              tasks={filteredTasks.filter((task) => task.status === column.id)}
-            />
-          ))}
-        </div>
-      </DndContext>
+          >
+            {columns.map((column) => (
+              <KanbanColumn
+                key={column.id}
+                id={column.id}
+                title={column.title}
+                tasks={filteredTasks.filter(
+                  (task: any) => task.status === column.id,
+                )}
+              />
+            ))}
+          </div>
+        </DndContext>
+      )}
 
+      {/* Modal */}
       <Modal open={open} close={() => setOpen(false)} title="Create Task">
         <div className="space-y-4">
           <Input
-            placeholder="Task title"
+            placeholder="Task Title"
             value={form.title}
             onChange={(e) =>
               setForm({
                 ...form,
-
                 title: e.target.value,
               })
             }
@@ -374,7 +501,6 @@ gap-6
             onChange={(e) =>
               setForm({
                 ...form,
-
                 description: e.target.value,
               })
             }
@@ -385,15 +511,21 @@ gap-6
             onChange={(e) =>
               setForm({
                 ...form,
-
-                priority: e.target.value,
+                priority: e.target.value as "low" | "medium" | "high",
               })
             }
             className="
-border
-rounded-xl
-p-3
 w-full
+
+border
+
+rounded-xl
+
+px-4
+py-3
+
+outline-none
+
 cursor-pointer
 "
           >
@@ -404,7 +536,28 @@ cursor-pointer
             <option value="high">High</option>
           </select>
 
-          <Button onClick={createTask}>Create</Button>
+          <div
+            className="
+flex
+justify-end
+gap-3
+"
+          >
+            <Button
+              className="
+bg-gray-200
+text-gray-700
+hover:bg-gray-300
+"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button disabled={loading} onClick={createTask}>
+              {loading ? "Creating..." : "Create Task"}
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

@@ -1,55 +1,54 @@
 import express from "express";
 
-
 import {
-
-createProject,
-getProjects
-
+  createProject,
+  getProjects,
+  getProject,
+  updateProject,
+  deleteProject,
 } from "../controllers/projectController";
 
+import { protect } from "../middleware/authMiddleware";
 
-import {
+const router = express.Router();
 
-protect
+/* ============================================================
+   Project CRUD
+============================================================ */
 
-} from "../middleware/authMiddleware";
-
-
-
-const router =
-express.Router();
-
-
-
-router.use(protect);
-
-
-
-// create project
-
-
+// Create Project
 router.post(
-
-"/:workspaceId",
-
-createProject
-
+  "/workspace/:workspaceId",
+  protect,
+  createProject
 );
 
-
-
-// get workspace projects
-
-
+// Get All Projects of Workspace
 router.get(
-
-"/:workspaceId",
-
-getProjects
-
+  "/workspace/:workspaceId",
+  protect,
+  getProjects
 );
 
+// Get Single Project
+router.get(
+  "/:projectId",
+  protect,
+  getProject
+);
 
+// Update Project
+router.put(
+  "/:projectId",
+  protect,
+  updateProject
+);
+
+// Delete Project
+router.delete(
+  "/:projectId",
+  protect,
+  deleteProject
+);
 
 export default router;

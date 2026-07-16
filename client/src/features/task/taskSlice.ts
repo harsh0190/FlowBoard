@@ -1,143 +1,178 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+export interface Comment {
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+  };
 
-interface Task {
+  text: string;
 
-    _id:string;
-
-    title:string;
-
-    description:string;
-
-    priority:
-    "low" |
-    "medium" |
-    "high";
-
-    status:
-    "todo" |
-    "in-progress" |
-    "review" |
-    "done";
-
-    comments?:any[];
-
+  createdAt: string;
 }
 
+export interface Task {
+  _id: string;
 
-interface State {
+  title: string;
 
-    tasks:Task[];
+  description: string;
 
+  workspace: string;
+
+  project: string;
+
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+
+  assignedTo?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+
+  status:
+    | "todo"
+    | "in-progress"
+    | "review"
+    | "done";
+
+  priority:
+    | "low"
+    | "medium"
+    | "high";
+
+  dueDate?: string;
+
+  comments: Comment[];
+
+  createdAt: string;
+
+  updatedAt: string;
 }
 
+interface TaskState {
+  tasks: Task[];
 
-const initialState:State={
+  currentTask: Task | null;
+}
 
-    tasks:[]
+const initialState: TaskState = {
+  tasks: [],
 
+  currentTask: null,
 };
 
-
-
 const taskSlice = createSlice({
+  name: "task",
 
-name:"task",
+  initialState,
 
-initialState,
+  reducers: {
+    setTasks: (
+      state,
+      action: PayloadAction<Task[]>
+    ) => {
+      state.tasks = action.payload;
+    },
 
+    setCurrentTask: (
+      state,
+      action: PayloadAction<Task | null>
+    ) => {
+      state.currentTask = action.payload;
+    },
 
-reducers:{
+    addTask: (
+      state,
+      action: PayloadAction<Task>
+    ) => {
+      state.tasks.unshift(action.payload);
+    },
 
+    updateTask: (
+      state,
+      action: PayloadAction<Task>
+    ) => {
+      const index = state.tasks.findIndex(
+        task => task._id === action.payload._id
+      );
 
-setTasks:(state,action)=>{
+      if (index !== -1) {
+        state.tasks[index] = action.payload;
+      }
 
+      if (
+        state.currentTask?._id ===
+        action.payload._id
+      ) {
+        state.currentTask = action.payload;
+      }
+    },
 
-state.tasks =
-action.payload;
+    updateTaskStatus: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        status:
+          | "todo"
+          | "in-progress"
+          | "review"
+          | "done";
+      }>
+    ) => {
+      const task = state.tasks.find(
+        task => task._id === action.payload.taskId
+      );
 
+      if (task) {
+        task.status = action.payload.status;
+      }
 
-},
+      if (
+        state.currentTask?._id ===
+        action.payload.taskId
+      ) {
+        state.currentTask.status =
+          action.payload.status;
+      }
+    },
 
+    deleteTask: (
+      state,
+      action: PayloadAction<string>
+    ) => {
+      state.tasks = state.tasks.filter(
+        task => task._id !== action.payload
+      );
 
+      if (
+        state.currentTask?._id === action.payload
+      ) {
+        state.currentTask = null;
+      }
+    },
 
+    clearTasks: state => {
+      state.tasks = [];
 
-updateTaskLocal:(state,action)=>{
-
-
-const task =
-state.tasks.find(
-
-t => 
-t._id === action.payload.id
-
-);
-
-
-
-if(task){
-
-
-task.status =
-action.payload.status;
-
-
-}
-
-
-},
-
-
-
-
-
-updateTask:(state,action)=>{
-
-
-const index =
-state.tasks.findIndex(
-
-t =>
-t._id === action.payload._id
-
-);
-
-
-
-if(index !== -1){
-
-
-state.tasks[index] =
-action.payload;
-
-
-}
-
-
-}
-
-
-
-}
-
-
+      state.currentTask = null;
+    },
+  },
 });
 
-
-
-
 export const {
-
-setTasks,
-
-updateTaskLocal,
-
-updateTask
-
-
-}=taskSlice.actions;
-
-
-
+  setTasks,
+  setCurrentTask,
+  addTask,
+  updateTask,
+  updateTaskStatus,
+  deleteTask,
+  clearTasks,
+} = taskSlice.actions;
 
 export default taskSlice.reducer;

@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from "../hooks/redux";
 import {
   createProjectApi,
   getProjectsApi,
+  deleteProjectApi,
 } from "../features/project/projectApi";
 
 import {
@@ -21,10 +22,14 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Modal from "../components/ui/Modal";
+import ConfirmModal from "../components/ui/ConfirmModal";
 
 import toast from "react-hot-toast";
 
 export default function Projects() {
+  useEffect(() => {
+  document.title = "Projects | FlowBoard";
+}, []);
   const navigate = useNavigate();
 
   const dispatch = useAppDispatch();
@@ -38,6 +43,9 @@ export default function Projects() {
   const { projects } = useAppSelector((s) => s.project);
 
   const [open, setOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -62,11 +70,10 @@ export default function Projects() {
   const create = async () => {
     if (!currentWorkspace) return;
 
-    await createProjectApi(
-      currentWorkspace._id,
-
-      form,
-    );
+    await createProjectApi(currentWorkspace._id, {
+      ...form,
+      deadline: form.deadline ? new Date(form.deadline) : undefined,
+    });
 
     toast.success("Project created");
 
@@ -81,6 +88,24 @@ export default function Projects() {
     });
 
     loadProjects();
+  };
+
+  const deleteProject = async () => {
+    if (!selectedProject) return;
+
+    try {
+      await deleteProjectApi(selectedProject);
+
+      toast.success("Project deleted.");
+
+      setDeleteOpen(false);
+
+      setSelectedProject(null);
+
+      loadProjects();
+    } catch (error) {
+      toast.error("Unable to delete project.");
+    }
   };
 
   return (
@@ -100,18 +125,6 @@ mb-8
 
 "
       >
-        <h1
-          className="
-
-text-3xl
-
-font-bold
-
-"
-        >
-          Projects
-        </h1>
-        
         <div
           className="
 
@@ -126,13 +139,13 @@ gap-5
           <select
             value={currentWorkspace?._id || ""}
             onChange={(e) => {
-              const selected = workspaces.find(
-                (w: any) => w._id === e.target.value,
-              );
+              const selected =
+                workspaces.find((w) => w._id === e.target.value) || null;
 
               dispatch(setCurrentWorkspace(selected));
-
-              dispatch(setCurrentProject(null));
+              if (selected) {
+  localStorage.setItem("workspaceId", selected._id);
+}
             }}
             className="
 
@@ -296,6 +309,20 @@ text-gray-500
                   <span>{project.deadline?.slice(0, 10)}</span>
                 </div>
               </Card>
+              <div className="mt-6 flex justify-end">
+                <Button
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+
+                    setSelectedProject(project._id);
+
+                    setDeleteOpen(true);
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
             </div>
           ))
         )}
@@ -342,6 +369,16 @@ text-gray-500
           <Button onClick={create}>Create</Button>
         </div>
       </Modal>
+      <ConfirmModal
+        open={deleteOpen}
+        close={() => {
+          setDeleteOpen(false);
+          setSelectedProject(null);
+        }}
+        title="Delete Project"
+        message="This project and all its tasks will be permanently deleted."
+        onConfirm={deleteProject}
+      />
     </div>
   );
 }

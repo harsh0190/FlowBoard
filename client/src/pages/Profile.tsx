@@ -1,21 +1,16 @@
 import { useAppSelector } from "../hooks/redux";
+import { useEffect } from "react";
 
 import Card from "../components/ui/Card";
 
 export default function Profile() {
+  useEffect(() => {
+  document.title = "Profile | FlowBoard";
+}, []);
   const { user } = useAppSelector((s) => s.auth);
 
   return (
     <div>
-      <h1
-        className="
-text-3xl
-font-bold
-mb-8
-"
-      >
-        Profile
-      </h1>
 
       <Card>
         <div

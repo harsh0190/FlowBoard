@@ -6,17 +6,13 @@ import { useAppDispatch } from "../hooks/redux";
 
 import { addNotification } from "../features/notification/notificationSlice";
 
-import toast from "react-hot-toast";
-
 export default function SocketListener() {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
     const handleNotification = (data: any) => {
-      dispatch(addNotification(data.message));
-
-      toast(data.message);
-    };
+  dispatch(addNotification(data.message));
+};
 
     socket.on(
       "notification",

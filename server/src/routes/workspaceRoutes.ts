@@ -1,62 +1,85 @@
 import express from "express";
 
-
 import {
-
-createWorkspace,
-getWorkspaces,
-inviteMember
-
+  createWorkspace,
+  getWorkspaces,
+  getWorkspaceById,
+  updateWorkspace,
+  deleteWorkspace,
+  inviteMember,
+  removeMember,
 } from "../controllers/workspaceController";
 
+import { protect } from "../middleware/authMiddleware";
 
 import {
-protect
-} from "../middleware/authMiddleware";
-
-
-import {
-isWorkspaceAdmin
-
+  isWorkspaceAdmin,
+  isWorkspaceMember,
 } from "../middleware/workspaceMiddleware";
 
+const router = express.Router();
 
+/* ============================================================
+   Workspace CRUD
+============================================================ */
 
-const router =
-express.Router();
-
-
-router.use(protect);
-
-
-
+// Create Workspace
 router.post(
-"/",
-createWorkspace
+  "/",
+  protect,
+  createWorkspace
 );
 
-
-
+// Get All Workspaces
 router.get(
-"/",
-getWorkspaces
+  "/",
+  protect,
+  getWorkspaces
 );
 
+// Get Single Workspace
+router.get(
+  "/:workspaceId",
+  protect,
+  isWorkspaceMember,
+  getWorkspaceById
+);
 
+// Update Workspace
+router.put(
+  "/:workspaceId",
+  protect,
+  isWorkspaceAdmin,
+  updateWorkspace
+);
 
-// invite users
+// Delete Workspace
+router.delete(
+  "/:workspaceId",
+  protect,
+  isWorkspaceAdmin,
+  deleteWorkspace
+);
 
+/* ============================================================
+   Members
+============================================================ */
 
+// Invite Member
 router.post(
-
-"/:workspaceId/invite",
-
-isWorkspaceAdmin,
-
-inviteMember
-
+  "/:workspaceId/invite",
+  protect,
+  isWorkspaceAdmin,
+  inviteMember
 );
 
+// Remove Member
+router.delete(
+  "/:workspaceId/member/:memberId",
+  protect,
+  isWorkspaceAdmin,
+  removeMember
+);
 
 
 export default router;

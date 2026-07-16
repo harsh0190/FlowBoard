@@ -15,6 +15,9 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 
 export default function Settings() {
+  useEffect(() => {
+  document.title = "Settings | FlowBoard";
+}, []);
   const dispatch = useAppDispatch();
 
   const { user } = useAppSelector((state) => state.auth);
@@ -33,6 +36,9 @@ export default function Settings() {
         workspaces.find((w: any) => w._id === saved) || workspaces[0];
 
       dispatch(setCurrentWorkspace(workspace));
+      if (workspace) {
+  localStorage.setItem("workspaceId", workspace._id);
+}
     }
   }, [workspaces]);
 
@@ -58,15 +64,6 @@ export default function Settings() {
 
   return (
     <div>
-      <h1
-        className="
-text-3xl
-font-bold
-mb-10
-"
-      >
-        Settings
-      </h1>
 
       <Card>
         <h2

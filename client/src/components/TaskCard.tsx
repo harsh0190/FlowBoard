@@ -4,12 +4,32 @@ import { useDraggable } from "@dnd-kit/core";
 
 import { CSS } from "@dnd-kit/utilities";
 
-import { Calendar, MessageCircle } from "lucide-react";
+import { Calendar, MessageCircle, Trash2 } from "lucide-react";
 
 import TaskModal from "./TaskModal";
 
+import { deleteTaskApi } from "../features/task/taskApi";
+
+import toast from "react-hot-toast";
+
 export default function TaskCard({ task }: any) {
   const [open, setOpen] = useState(false);
+  const deleteTask = async (
+  e: React.MouseEvent
+) => {
+  e.stopPropagation();
+
+  try {
+    await deleteTaskApi(task._id);
+
+    toast.success("Task deleted");
+    setTimeout(() => {
+  window.location.reload();
+}, 300);
+  } catch {
+    toast.error("Unable to delete task");
+  }
+};
 
   const {
     attributes,
@@ -24,6 +44,8 @@ export default function TaskCard({ task }: any) {
   } = useDraggable({
     id: task._id,
   });
+
+
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -68,14 +90,42 @@ ${isDragging ? "cursor-grabbing" : "cursor-pointer"}
 
 `}
       >
-        <h2
-          className="
+        <div
+  className="
+flex
+justify-between
+items-start
+"
+>
+  <h2
+    className="
 font-bold
 text-lg
 "
-        >
-          {task.title}
-        </h2>
+  >
+    {task.title}
+  </h2>
+
+  <button
+    onClick={deleteTask}
+    onPointerDown={(e) => e.stopPropagation()}
+    className="
+p-2
+
+rounded-lg
+
+text-red-500
+
+hover:bg-red-50
+
+transition
+
+cursor-pointer
+"
+  >
+    <Trash2 size={18} />
+  </button>
+</div>
 
         <p
           className="

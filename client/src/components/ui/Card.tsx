@@ -1,57 +1,24 @@
-import {
+import { type ReactNode } from "react";
 
-type ReactNode
+interface CardProps {
+  children: ReactNode;
 
-} from "react";
+  className?: string;
 
-
-
-
-
-interface CardProps{
-
-
-children:ReactNode;
-
-
-className?:string;
-
-
-onClick?:()=>void;
-
-
+  onClick?: () => void;
 }
 
-
-
-
-
-
 export default function Card({
+  children,
 
-children,
+  className = "",
 
-className="",
-
-onClick
-
-}:CardProps){
-
-
-
-
-
-
-return(
-
-
-<div
-
-
-onClick={onClick}
-
-
-className={`
+  onClick,
+}: CardProps) {
+  return (
+    <div
+      onClick={onClick}
+      className={`
 
 bg-white
 
@@ -65,36 +32,15 @@ border-gray-100
 
 p-6
 
-${
-
-onClick
-
-?
-
-"cursor-pointer"
-
-:
-
-""
-
-}
+${onClick ? "cursor-pointer" : ""}
 
 
 ${className}
 
 
 `}
-
->
-
-
-{children}
-
-
-</div>
-
-
-);
-
-
+    >
+      {children}
+    </div>
+  );
 }

@@ -61,10 +61,6 @@ io.on(
 (socket)=>{
 
 
-console.log(
-"Socket connected",
-socket.id
-);
 
 
 
@@ -83,10 +79,6 @@ workspaceId
 );
 
 
-console.log(
-"Joined:",
-workspaceId
-);
 
 
 }
@@ -103,9 +95,6 @@ socket.on(
 ()=>{
 
 
-console.log(
-"Socket disconnected"
-);
 
 
 }

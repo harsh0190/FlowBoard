@@ -1,20 +1,47 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-interface State {
-  workspaces: any[];
+export interface WorkspaceMember {
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+  };
 
-  currentWorkspace: any | null;
+  role: "admin" | "member";
+
+  joinedAt: string;
 }
 
-const savedWorkspace = localStorage.getItem("workspace");
+export interface Workspace {
+  _id: string;
 
-const initialState: State = {
+  name: string;
+
+  description: string;
+
+  owner: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+
+  members: WorkspaceMember[];
+
+  createdAt: string;
+
+  updatedAt: string;
+}
+
+interface WorkspaceState {
+  workspaces: Workspace[];
+
+  currentWorkspace: Workspace | null;
+}
+
+const initialState: WorkspaceState = {
   workspaces: [],
 
-  currentWorkspace:
-    savedWorkspace && savedWorkspace !== "undefined"
-      ? JSON.parse(savedWorkspace)
-      : null,
+  currentWorkspace: null,
 };
 
 const workspaceSlice = createSlice({
@@ -23,30 +50,80 @@ const workspaceSlice = createSlice({
   initialState,
 
   reducers: {
-    setWorkspaces: (state, action) => {
+    setWorkspaces: (
+      state,
+      action: PayloadAction<Workspace[]>
+    ) => {
       state.workspaces = action.payload;
     },
 
-    setCurrentWorkspace: (state, action) => {
+    setCurrentWorkspace: (
+      state,
+      action: PayloadAction<Workspace | null>
+    ) => {
       state.currentWorkspace = action.payload;
+    },
 
-      if (action.payload) {
-        localStorage.setItem(
-          "workspace",
+    addWorkspace: (
+      state,
+      action: PayloadAction<Workspace>
+    ) => {
+      state.workspaces.unshift(action.payload);
+    },
 
-          JSON.stringify(action.payload),
-        );
-      } else {
-        localStorage.removeItem("workspace");
+    updateWorkspace: (
+      state,
+      action: PayloadAction<Workspace>
+    ) => {
+      const index = state.workspaces.findIndex(
+        (workspace) =>
+          workspace._id === action.payload._id
+      );
+
+      if (index !== -1) {
+        state.workspaces[index] = action.payload;
       }
+
+      if (
+        state.currentWorkspace?._id ===
+        action.payload._id
+      ) {
+        state.currentWorkspace = action.payload;
+      }
+    },
+
+    deleteWorkspace: (
+      state,
+      action: PayloadAction<string>
+    ) => {
+      state.workspaces = state.workspaces.filter(
+        (workspace) =>
+          workspace._id !== action.payload
+      );
+
+      if (
+        state.currentWorkspace?._id ===
+        action.payload
+      ) {
+        state.currentWorkspace = null;
+      }
+    },
+
+    clearWorkspace: (state) => {
+      state.workspaces = [];
+
+      state.currentWorkspace = null;
     },
   },
 });
 
 export const {
   setWorkspaces,
-
   setCurrentWorkspace,
+  addWorkspace,
+  updateWorkspace,
+  deleteWorkspace,
+  clearWorkspace,
 } = workspaceSlice.actions;
 
 export default workspaceSlice.reducer;

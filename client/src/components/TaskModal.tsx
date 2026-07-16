@@ -6,7 +6,7 @@ import { updateTask } from "../features/task/taskSlice";
 
 import { useAppDispatch } from "../hooks/redux";
 
-import { addCommentApi } from "../features/task/taskApi";
+import {  addCommentApi } from "../features/task/taskApi";
 
 import Button from "./ui/Button";
 
@@ -18,6 +18,7 @@ export default function TaskModal({
   const dispatch = useAppDispatch();
 
   const [comment, setComment] = useState("");
+
 
   const addComment = async () => {
     if (!comment.trim()) return;
@@ -214,6 +215,9 @@ cursor-pointer
         >
           Add Comment
         </Button>
+        <div className="flex justify-between mt-6">
+  
+        </div>
       </div>
     </div>
   );

@@ -6,9 +6,6 @@ export const updatePasswordApi =
 async(password:string)=>{
 
 
-console.log(
-"Sending password update"
-);
 
 
 const res =
