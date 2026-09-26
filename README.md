@@ -1,7 +1,7 @@
 # 🚀 FlowBoard - Project Management SaaS
 
-FlowBoard is a full-stack **Project Management SaaS** platform built with the **MERN Stack**.  
-It helps teams manage workspaces, projects, tasks, members, and real-time collaboration using a Kanban workflow.
+FlowBoard is a full-stack **Project Management SaaS** platform built with the **MERN Stack**, **Redis**, and **Socket.IO**.  
+It helps teams manage workspaces, projects, tasks, members, and real-time collaboration using a Kanban workflow, with safe concurrent editing, activity tracking, overdue alerts, and an AI-powered weekly project digest.
 
 ---
 
@@ -37,8 +37,12 @@ It helps teams manage workspaces, projects, tasks, members, and real-time collab
 - 🏢 Multi-Workspace Management
 - 👥 Team Collaboration & Role-Based Access
 - 📁 Project Management
-- 📌 Drag & Drop Kanban Board
-- 🔔 Real-Time Notifications (Socket.IO)
+- 📌 Kanban Board with One-Click Status Updates
+- ✏️ Task Editing with Conflict Detection (Optimistic Concurrency)
+- 🧾 Per-Task Activity Log
+- ⏰ Overdue Task Alerts via Background Job
+- 🤖 AI Weekly Digest for Projects
+- 🔔 Real-Time Notifications
 - 📊 Dashboard Analytics
 - ⚙️ Profile & Password Management
 
@@ -46,9 +50,11 @@ It helps teams manage workspaces, projects, tasks, members, and real-time collab
 
 ## 🛠️ Tech Stack
 
-**Frontend:** React, TypeScript, Vite, Redux Toolkit, Tailwind CSS, React Router, Axios, DND Kit, Recharts, Socket.IO Client
+**Frontend:** React, TypeScript, Vite, Redux Toolkit, Tailwind CSS, React Router, Axios, Recharts, Socket.IO Client
 
-**Backend:** Node.js, Express.js, TypeScript, MongoDB, Mongoose, JWT, Bcrypt, Socket.IO
+**Backend:** Node.js, Express.js, TypeScript, MongoDB, Mongoose, Redis, BullMQ, JWT, Bcrypt, Socket.IO
+
+**AI:** Vercel AI SDK with Groq
 
 ---
 
