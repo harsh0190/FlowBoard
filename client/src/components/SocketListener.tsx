@@ -17,6 +17,13 @@ export default function SocketListener() {
   }, [dispatch]);
 
   useEffect(() => {
+  socket.connect();
+  return () => {
+    socket.disconnect();
+  };
+}, []);
+
+  useEffect(() => {
     if (!workspaceId) return;
     const join = () => socket.emit("joinWorkspace", workspaceId);
     join();

@@ -1,5 +1,6 @@
 import express from "express";
 import { idempotency } from "../middleware/idempotencyMiddleware";
+import { getProjectDigest } from "../controllers/digestController";
 
 import {
   createTask,
@@ -23,6 +24,7 @@ const router = express.Router();
 
 // Create Task
 router.post("/project/:projectId", protect, idempotency(), createTask);
+router.post("/project/:projectId/digest", protect, getProjectDigest);
 
 // Get All Tasks of Project
 router.get("/project/:projectId", protect, getTasks);

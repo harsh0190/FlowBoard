@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import DigestModal from "../components/DigestModal";
 import toast from "react-hot-toast";
 
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
@@ -66,6 +67,7 @@ export default function Kanban() {
   const { tasks } = useAppSelector((state) => state.task);
 
   const [open, setOpen] = useState(false);
+  const [digestOpen, setDigestOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy] = useState("newest");
@@ -171,7 +173,6 @@ export default function Kanban() {
       setLoading(false);
     }
   }
-
 
   /* ===================== CHANGE STATUS ===================== */
 
@@ -290,7 +291,17 @@ export default function Kanban() {
             </select>
           </div>
 
-          <Button onClick={() => setOpen(true)}>+ Add Task</Button>
+          <div className="flex items-center gap-3">
+            <Button
+              className="bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50"
+              disabled={!currentProject}
+              onClick={() => setDigestOpen(true)}
+            >
+              Weekly Digest
+            </Button>
+
+            <Button onClick={() => setOpen(true)}>+ Add Task</Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -337,6 +348,16 @@ export default function Kanban() {
         </div>
       )}
 
+      {currentProject && (
+        <DigestModal
+          open={digestOpen}
+          close={() => setDigestOpen(false)}
+          projectId={currentProject._id}
+          cached={false}
+          aiUsed={false}
+        />
+      )}
+
       {/* Create Task Modal */}
       <Modal open={open} close={() => setOpen(false)} title="Create Task">
         <div className="space-y-4">
@@ -366,7 +387,6 @@ export default function Kanban() {
             <option value="medium">Medium</option>
             <option value="high">High</option>
           </select>
-
 
           <div className="flex justify-end gap-3">
             <Button

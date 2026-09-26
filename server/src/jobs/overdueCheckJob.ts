@@ -1,10 +1,10 @@
 import { Queue, Worker } from "bullmq";
 import type { Server } from "socket.io";
 import Task from "../models/Task";
-import { redis } from "../config/redis";
+import { bullConnection } from "../config/redis";
 
 export async function startOverdueJob(io: Server) {
-  const queue = new Queue("overdue-check", { connection: redis });
+  const queue = new Queue("overdue-check", { connection: bullConnection });
 
   // Stored in Redis, so restarts don't create duplicate schedules
   await queue.upsertJobScheduler(
@@ -38,7 +38,7 @@ export async function startOverdueJob(io: Server) {
       }
       console.log(`[overdue-check] ${notified} newly overdue task(s)`);
     },
-    { connection: redis },
+    { connection: bullConnection },
   );
 
   worker.on("failed", (job, err) =>

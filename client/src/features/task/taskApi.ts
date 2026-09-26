@@ -138,3 +138,30 @@ export const filterTasksApi = async (
 
   return response.data;
 };
+
+
+export type ProjectDigest = {
+  project: string;
+  generatedAt: string;
+  cached: boolean;
+  stats: {
+    total: number;
+    todo: number;
+    inProgress: number;
+    review: number;
+    done: number;
+    overdue: number;
+    dueSoon: number;
+    activityThisWeek: number;
+  };
+  headline: string;
+  highlights: string[];
+  atRisk: { task: string; reason: string }[];
+  nextSteps: string[];
+  aiUsed: boolean;
+};
+
+export const getProjectDigestApi = async (projectId: string) => {
+  const response = await api.post(`/api/tasks/project/${projectId}/digest`);
+  return response.data as ProjectDigest;
+};

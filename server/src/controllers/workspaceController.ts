@@ -279,6 +279,7 @@ export const removeMember = async (req: any, res: Response) => {
     workspace.members = workspace.members.filter(
       (member: any) => member.user.toString() !== memberId,
     );
+    await workspace.save();
 
     const updatedWorkspace = await Workspace.findById(workspace._id)
       .populate("owner", "name email")

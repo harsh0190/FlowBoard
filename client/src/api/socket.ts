@@ -1,9 +1,6 @@
 import { io } from "socket.io-client";
 
-export const socket = io(
-  import.meta.env.VITE_API_URL,
-
-  {
-    withCredentials: true,
-  },
-);
+export const socket = io(import.meta.env.VITE_API_URL, {
+  autoConnect: false,
+  auth: (cb) => cb({ token: localStorage.getItem("token") }),
+});
