@@ -11,11 +11,13 @@ export const createTaskApi = async (
     description?: string;
     assignedTo?: string;
     priority?: "low" | "medium" | "high";
-    dueDate?: Date;
+    dueDate?: string;
   },
+  idempotencyKey?: string,
 ) => {
-  const response = await api.post(`/api/tasks/project/${projectId}`, data);
-
+  const response = await api.post(`/api/tasks/project/${projectId}`, data, {
+    headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
+  });
   return response.data;
 };
 
@@ -46,17 +48,37 @@ export const getTaskApi = async (taskId: string) => {
 export const updateTaskApi = async (
   taskId: string,
   data: {
+    version: number; // required: the version you last read
     title?: string;
     description?: string;
-    assignedTo?: string;
+    assignedTo?: string | null;
     priority?: "low" | "medium" | "high";
-    dueDate?: Date;
+    dueDate?: string | null;
     status?: "todo" | "in-progress" | "review" | "done";
   },
 ) => {
   const response = await api.put(`/api/tasks/${taskId}`, data);
-
   return response.data;
+};
+
+
+export const getTaskActivityApi = async (taskId: string) => {
+  const response = await api.get(`/api/tasks/${taskId}/activity`);
+  return response.data as { _id: string; message: string; createdAt: string }[];
+};
+
+export const isConflict = (e: unknown): boolean => {
+  if (typeof e !== "object" || e === null || !("response" in e)) {
+    return false;
+  }
+
+  const response = e.response;
+  return (
+    typeof response === "object" &&
+    response !== null &&
+    "status" in response &&
+    response.status === 409
+  );
 };
 
 /* ============================================================

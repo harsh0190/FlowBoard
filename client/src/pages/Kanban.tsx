@@ -1,21 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
-import { DndContext } from "@dnd-kit/core";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
 
 import { getWorkspacesApi } from "../features/workspace/workspaceApi";
-
 import {
   setCurrentWorkspace,
   setWorkspaces,
+  type Workspace,
 } from "../features/workspace/workspaceSlice";
 
 import { getProjectsApi } from "../features/project/projectApi";
-
 import {
   setCurrentProject,
   setProjects,
+  type Project,
 } from "../features/project/projectSlice";
 
 import {
@@ -23,8 +22,12 @@ import {
   getTasksApi,
   updateTaskStatusApi,
 } from "../features/task/taskApi";
-
-import { setTasks, updateTask } from "../features/task/taskSlice";
+import {
+  setTasks,
+  updateTask,
+  type Task,
+  type TaskStatus,
+} from "../features/task/taskSlice";
 
 import KanbanColumn from "../components/KanbanColumn";
 
@@ -33,79 +36,59 @@ import Button from "../components/ui/Button";
 import Modal from "../components/ui/Modal";
 
 const columns = [
-  {
-    id: "todo",
-    title: "Todo",
-  },
-  {
-    id: "in-progress",
-    title: "In Progress",
-  },
-  {
-    id: "review",
-    title: "Review",
-  },
-  {
-    id: "done",
-    title: "Completed",
-  },
+  { id: "todo", title: "Todo" },
+  { id: "in-progress", title: "In Progress" },
+  { id: "review", title: "Review" },
+  { id: "done", title: "Completed" },
 ];
+
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(
+  columns.map((c) => [c.id, c.title]),
+);
+
+const emptyForm = {
+  title: "",
+  description: "",
+  priority: "medium" as "low" | "medium" | "high",
+};
 
 export default function Kanban() {
   useEffect(() => {
-  document.title = "Kanban | FlowBoard";
-}, []);
+    document.title = "Kanban | FlowBoard";
+  }, []);
+
   const dispatch = useAppDispatch();
 
   const { workspaces, currentWorkspace } = useAppSelector(
     (state) => state.workspace,
   );
-
   const { projects, currentProject } = useAppSelector((state) => state.project);
-
   const { tasks } = useAppSelector((state) => state.task);
 
   const [open, setOpen] = useState(false);
-
   const [loading, setLoading] = useState(false);
-
   const [search, setSearch] = useState("");
-
   const [sortBy] = useState("newest");
-
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [form, setForm] = useState(emptyForm);
+  const [dueDate, setDueDate] = useState<string | undefined>();
 
-  const [form, setForm] = useState<{
-    title: string;
-    description: string;
-    priority: "low" | "medium" | "high";
-  }>({
-    title: "",
-    description: "",
-    priority: "medium",
-  });
+  // One key per create attempt: a double-click or retry reuses it,
+  // a successful create rotates it.
+  const idemKey = useRef(crypto.randomUUID());
 
-  /* =====================================
-        LOAD WORKSPACES
-  ===================================== */
+  /* ===================== LOAD WORKSPACES ===================== */
 
   useEffect(() => {
     async function load() {
       try {
         const data = await getWorkspacesApi();
+        dispatch(setWorkspaces(data));
 
-dispatch(setWorkspaces(data));
+        const savedId = localStorage.getItem("workspaceId");
+        const saved = data.find((w: Workspace) => w._id === savedId) || null;
 
-const savedWorkspaceId = localStorage.getItem("workspaceId");
-
-const savedWorkspace =
-  data.find((w: any) => w._id === savedWorkspaceId) || null;
-
-dispatch(
-  setCurrentWorkspace(
-    savedWorkspace || data[0] || null
-  )
-);
+        dispatch(setCurrentWorkspace(saved || data[0] || null));
       } catch {
         toast.error("Unable to load workspaces.");
       }
@@ -114,9 +97,7 @@ dispatch(
     load();
   }, [dispatch]);
 
-  /* =====================================
-        LOAD PROJECTS
-  ===================================== */
+  /* ===================== LOAD PROJECTS ===================== */
 
   useEffect(() => {
     async function load() {
@@ -124,11 +105,8 @@ dispatch(
 
       try {
         const data = await getProjectsApi(currentWorkspace._id);
-
         dispatch(setProjects(data));
-
         dispatch(setTasks([]));
-
         dispatch(setCurrentProject(null));
       } catch {
         toast.error("Unable to load projects.");
@@ -138,9 +116,7 @@ dispatch(
     load();
   }, [currentWorkspace, dispatch]);
 
-  /* =====================================
-        LOAD TASKS
-  ===================================== */
+  /* ===================== LOAD TASKS ===================== */
 
   useEffect(() => {
     async function load() {
@@ -148,7 +124,6 @@ dispatch(
 
       try {
         const data = await getTasksApi(currentProject._id);
-
         dispatch(setTasks(data));
       } catch {
         toast.error("Unable to load tasks.");
@@ -158,9 +133,7 @@ dispatch(
     load();
   }, [currentProject, dispatch]);
 
-  /* =====================================
-        CREATE TASK
-  ===================================== */
+  /* ===================== CREATE TASK ===================== */
 
   async function createTask() {
     if (!currentProject) {
@@ -173,24 +146,25 @@ dispatch(
       return;
     }
 
+    if (loading) return;
+
     try {
       setLoading(true);
 
-      await createTaskApi(currentProject._id, form);
+      await createTaskApi(
+        currentProject._id,
+        { ...form, dueDate },
+        idemKey.current,
+      );
+      idemKey.current = crypto.randomUUID();
 
       toast.success("Task created.");
 
       setOpen(false);
+      setForm(emptyForm);
+      setDueDate(undefined);
 
-      setForm({
-        title: "",
-        description: "",
-        priority: "medium",
-      });
-
-      const data = await getTasksApi(currentProject._id);
-
-      dispatch(setTasks(data));
+      dispatch(setTasks(await getTasksApi(currentProject._id)));
     } catch {
       toast.error("Unable to create task.");
     } finally {
@@ -198,59 +172,44 @@ dispatch(
     }
   }
 
-  /* =====================================
-        DRAG & DROP
-  ===================================== */
 
-  const handleDragEnd = async (event: any) => {
-    const taskId = event.active.id;
+  /* ===================== CHANGE STATUS ===================== */
 
-    const newStatus = event.over?.id;
+  const changeStatus = async (task: Task, newStatus: TaskStatus) => {
+    if (task.status === newStatus) return;
 
-    if (!newStatus) return;
-
-    const currentTask = tasks.find((task) => task._id === taskId);
-
-    if (!currentTask) return;
-
-    dispatch(
-      updateTask({
-        ...currentTask,
-        status: newStatus,
-      }),
-    );
+    dispatch(updateTask({ ...task, status: newStatus })); // optimistic
 
     try {
-      await updateTaskStatusApi(taskId, newStatus);
+      const saved = await updateTaskStatusApi(task._id, newStatus);
+
+      dispatch(
+        updateTask({ ...task, status: newStatus, version: saved.version }),
+      );
+
+      toast.success(`Moved to ${STATUS_LABEL[newStatus]}`);
     } catch {
-      toast.error("Unable to update task.");
+      dispatch(updateTask(task)); // roll back
+      toast.error("Unable to update status.");
     }
   };
 
-  /* =====================================
-        FILTER
-  ===================================== */
+  /* ===================== FILTER ===================== */
 
   const filteredTasks = useMemo(() => {
     let result = [...tasks];
 
-    /* Search by Title */
-
     if (search.trim()) {
-      result = result.filter((task: any) =>
+      result = result.filter((task: Task) =>
         task.title?.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
-    /* Priority */
-
     if (priorityFilter !== "all") {
-      result = result.filter((task: any) => task.priority === priorityFilter);
+      result = result.filter((task: Task) => task.priority === priorityFilter);
     }
 
-    /* Sorting */
-
-    result.sort((a: any, b: any) => {
+    result.sort((a: Task, b: Task) => {
       switch (sortBy) {
         case "oldest":
           return (
@@ -258,12 +217,7 @@ dispatch(
           );
 
         case "priority": {
-          const order = {
-            high: 3,
-            medium: 2,
-            low: 1,
-          };
-
+          const order = { high: 3, medium: 2, low: 1 };
           return (
             order[b.priority as keyof typeof order] -
             order[a.priority as keyof typeof order]
@@ -283,227 +237,119 @@ dispatch(
     return result;
   }, [tasks, search, priorityFilter, sortBy]);
 
+  const selectClass = "border rounded-xl px-4 py-3 outline-none cursor-pointer";
+
   return (
     <div className="space-y-6">
       {/* Toolbar */}
-
       <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <select
+              value={currentWorkspace?._id || ""}
+              onChange={(e) => {
+                const workspace =
+                  workspaces.find((w: Workspace) => w._id === e.target.value) ??
+                  null;
 
-  {/* Row 1 */}
+                dispatch(setCurrentWorkspace(workspace));
 
-  <div
-    className="
-flex
-items-center
-justify-between
-gap-4
-"
-  >
-    <div
-      className="
-flex
-items-center
-gap-4
-"
-    >
-      {/* Workspace */}
+                if (workspace) {
+                  localStorage.setItem("workspaceId", workspace._id);
+                }
+              }}
+              className={`w-56 ${selectClass}`}
+            >
+              <option value="">Workspace</option>
 
-      <select
-        value={currentWorkspace?._id || ""}
-        onChange={(e) => {
-          const workspace =
-            workspaces.find((w: any) => w._id === e.target.value) ?? null;
+              {workspaces.map((w: Workspace) => (
+                <option key={w._id} value={w._id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
 
-          dispatch(setCurrentWorkspace(workspace));
-          if (workspace) {
-  localStorage.setItem("workspaceId", workspace._id);
-}
-        }}
-        className="
-w-56
-border
-rounded-xl
-px-4
-py-3
-outline-none
-cursor-pointer
-"
-      >
-        <option value="">Workspace</option>
+            <select
+              value={currentProject?._id || ""}
+              onChange={(e) => {
+                const project =
+                  projects.find((p: Project) => p._id === e.target.value) ??
+                  null;
 
-        {workspaces.map((w: any) => (
-          <option key={w._id} value={w._id}>
-            {w.name}
-          </option>
-        ))}
-      </select>
+                dispatch(setCurrentProject(project));
+              }}
+              className={`w-56 ${selectClass}`}
+            >
+              <option value="">Project</option>
 
-      {/* Project */}
+              {projects.map((project: Project) => (
+                <option key={project._id} value={project._id}>
+                  {project.title}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <select
-        value={currentProject?._id || ""}
-        onChange={(e) => {
-          const project =
-            projects.find((p: any) => p._id === e.target.value) ?? null;
+          <Button onClick={() => setOpen(true)}>+ Add Task</Button>
+        </div>
 
-          dispatch(setCurrentProject(project));
-        }}
-        className="
-w-56
-border
-rounded-xl
-px-4
-py-3
-outline-none
-cursor-pointer
-"
-      >
-        <option value="">Project</option>
+        <div className="flex items-center gap-4">
+          <Input
+            placeholder="Search tasks..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1"
+          />
 
-        {projects.map((project: any) => (
-          <option
-            key={project._id}
-            value={project._id}
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className={`w-48 ${selectClass}`}
           >
-            {project.title}
-          </option>
-        ))}
-      </select>
-    </div>
+            <option value="all">All Priority</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
 
-    <div
-      className="
-flex
-items-center
-gap-3
-"
-    >
-
-      <Button
-        onClick={() => setOpen(true)}
-      >
-        + Add Task
-      </Button>
-    </div>
-  </div>
-
-  {/* Row 2 */}
-
-  <div
-    className="
-flex
-items-center
-gap-4
-"
-  >
-    <Input
-      placeholder="Search tasks..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      className="flex-1"
-    />
-
-    <select
-      value={priorityFilter}
-      onChange={(e) => setPriorityFilter(e.target.value)}
-      className="
-w-48
-border
-rounded-xl
-px-4
-py-3
-outline-none
-cursor-pointer
-"
-    >
-      <option value="all">All Priority</option>
-
-      <option value="high">High</option>
-
-      <option value="medium">Medium</option>
-
-      <option value="low">Low</option>
-    </select>
-  </div>
-
-</div>
-            
-      {/* Empty State */}
-
+      {/* Board */}
       {!currentProject ? (
-        <div
-          className="
-rounded-2xl
-border
-bg-white
-py-20
-text-center
-"
-        >
-          <h2
-            className="
-text-2xl
-font-semibold
-"
-          >
-            Select a Project
-          </h2>
-
-          <p
-            className="
-mt-2
-text-gray-500
-"
-          >
+        <div className="rounded-2xl border bg-white py-20 text-center">
+          <h2 className="text-2xl font-semibold">Select a Project</h2>
+          <p className="mt-2 text-gray-500">
             Choose a project to manage tasks.
           </p>
         </div>
       ) : (
-        <DndContext onDragEnd={handleDragEnd}>
-          <div
-            className="
-grid
-gap-6
-xl:grid-cols-4
-"
-          >
-            {columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                id={column.id}
-                title={column.title}
-                tasks={filteredTasks.filter(
-                  (task: any) => task.status === column.id,
-                )}
-              />
-            ))}
-          </div>
-        </DndContext>
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {columns.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              title={column.title}
+              tasks={filteredTasks.filter(
+                (task: Task) => task.status === column.id,
+              )}
+              onStatusChange={changeStatus}
+            />
+          ))}
+        </div>
       )}
 
-      {/* Modal */}
+      {/* Create Task Modal */}
       <Modal open={open} close={() => setOpen(false)} title="Create Task">
         <div className="space-y-4">
           <Input
             placeholder="Task Title"
             value={form.title}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                title: e.target.value,
-              })
-            }
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
 
           <Input
             placeholder="Description"
             value={form.description}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                description: e.target.value,
-              })
-            }
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
 
           <select
@@ -514,41 +360,17 @@ xl:grid-cols-4
                 priority: e.target.value as "low" | "medium" | "high",
               })
             }
-            className="
-w-full
-
-border
-
-rounded-xl
-
-px-4
-py-3
-
-outline-none
-
-cursor-pointer
-"
+            className={`w-full ${selectClass}`}
           >
             <option value="low">Low</option>
-
             <option value="medium">Medium</option>
-
             <option value="high">High</option>
           </select>
 
-          <div
-            className="
-flex
-justify-end
-gap-3
-"
-          >
+
+          <div className="flex justify-end gap-3">
             <Button
-              className="
-bg-gray-200
-text-gray-700
-hover:bg-gray-300
-"
+              className="bg-gray-200 text-gray-700 hover:bg-gray-300"
               onClick={() => setOpen(false)}
             >
               Cancel

@@ -1,204 +1,114 @@
 import { useState } from "react";
-
-import { useDraggable } from "@dnd-kit/core";
-
-import { CSS } from "@dnd-kit/utilities";
-
 import { Calendar, MessageCircle, Trash2 } from "lucide-react";
-
-import TaskModal from "./TaskModal";
-
-import { deleteTaskApi } from "../features/task/taskApi";
-
 import toast from "react-hot-toast";
 
-export default function TaskCard({ task }: any) {
-  const [open, setOpen] = useState(false);
-  const deleteTask = async (
-  e: React.MouseEvent
-) => {
-  e.stopPropagation();
+import TaskModal from "./TaskModal";
+import { deleteTaskApi } from "../features/task/taskApi";
+import {
+  deleteTask as removeTask,
+  type Task,
+  type TaskStatus,
+} from "../features/task/taskSlice";
+import { useAppDispatch } from "../hooks/redux";
 
-  try {
-    await deleteTaskApi(task._id);
+const STATUSES: Array<{ id: TaskStatus; label: string }> = [
+  { id: "todo", label: "Todo" },
+  { id: "in-progress", label: "In Progress" },
+  { id: "review", label: "Review" },
+  { id: "done", label: "Completed" },
+];
 
-    toast.success("Task deleted");
-    setTimeout(() => {
-  window.location.reload();
-}, 300);
-  } catch {
-    toast.error("Unable to delete task");
-  }
+const priorityColor: Record<Task["priority"], string> = {
+  low: "bg-green-100 text-green-600",
+  medium: "bg-yellow-100 text-yellow-600",
+  high: "bg-red-100 text-red-600",
 };
 
-  const {
-    attributes,
+type TaskCardProps = {
+  task: Task;
+  onStatusChange: (task: Task, nextStatus: TaskStatus) => void;
+};
 
-    listeners,
+export default function TaskCard({ task, onStatusChange }: TaskCardProps) {
+  const dispatch = useAppDispatch();
+  const [open, setOpen] = useState(false);
 
-    setNodeRef,
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${task.title}"?`)) return;
 
-    transform,
-
-    isDragging,
-  } = useDraggable({
-    id: task._id,
-  });
-
-
-
-  const style = {
-    transform: CSS.Translate.toString(transform),
-
-    opacity: isDragging ? 0.6 : 1,
-  };
-
-  const priorityColor: any = {
-    low: "bg-green-100 text-green-600",
-
-    medium: "bg-yellow-100 text-yellow-600",
-
-    high: "bg-red-100 text-red-600",
+    try {
+      await deleteTaskApi(task._id);
+      dispatch(removeTask(task._id));
+      toast.success("Task deleted");
+    } catch {
+      toast.error("Unable to delete task");
+    }
   };
 
   return (
     <>
       <div
-        ref={setNodeRef}
-        style={style}
-        {...listeners}
-        {...attributes}
-        className={`
-
-bg-white
-
-rounded-2xl
-
-shadow
-
-p-6
-
-hover:-translate-y-1
-
-transition
-
-select-none
-
-
-${isDragging ? "cursor-grabbing" : "cursor-pointer"}
-
-
-`}
+        onClick={() => setOpen(true)}
+        className="bg-white rounded-2xl shadow p-6 hover:shadow-md transition cursor-pointer"
       >
-        <div
-  className="
-flex
-justify-between
-items-start
-"
->
-  <h2
-    className="
-font-bold
-text-lg
-"
-  >
-    {task.title}
-  </h2>
+        <div className="flex justify-between items-start gap-2">
+          <h2 className="font-bold text-lg">{task.title}</h2>
+          <button
+            onClick={handleDelete}
+            aria-label="Delete task"
+            className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition cursor-pointer"
+          >
+            <Trash2 size={18} />
+          </button>
+        </div>
 
-  <button
-    onClick={deleteTask}
-    onPointerDown={(e) => e.stopPropagation()}
-    className="
-p-2
+        {task.description && (
+          <p className="text-gray-500 mt-3">{task.description}</p>
+        )}
 
-rounded-lg
-
-text-red-500
-
-hover:bg-red-50
-
-transition
-
-cursor-pointer
-"
-  >
-    <Trash2 size={18} />
-  </button>
-</div>
-
-        <p
-          className="
-text-gray-500
-mt-3
-"
-        >
-          {task.description}
-        </p>
-
-        <div
-          className="
-flex
-items-center
-gap-2
-mt-6
-text-gray-400
-text-sm
-"
-        >
+        <div className="flex items-center gap-2 mt-4 text-gray-400 text-sm">
           <Calendar size={16} />
           Created: {new Date(task.createdAt).toLocaleDateString()}
         </div>
 
-        <div
-          className="
-flex
-justify-between
-items-center
-mt-5
-"
-        >
+        <div className="flex justify-between items-center mt-4">
           <span
-            className={`
-
-px-3
-
-py-1
-
-rounded-full
-
-text-sm
-
-${priorityColor[task.priority]}
-
-`}
+            className={`px-3 py-1 rounded-full text-sm ${priorityColor[task.priority]}`}
           >
             {task.priority}
           </span>
 
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-
-              setOpen(true);
-            }}
-            className="
-flex
-gap-1
-items-center
-
-cursor-pointer
-
-hover:text-indigo-600
-
-transition
-"
-          >
+          <span className="flex gap-1 items-center text-gray-600">
             <MessageCircle size={16} />
-
             {task.comments?.length || 0}
-          </button>
+          </span>
+        </div>
+
+        <div
+          className="mt-5 pt-4 border-t border-gray-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <select
+            value=""
+            onChange={(e) => onStatusChange(task, e.target.value as TaskStatus)}
+            aria-label="Update status"
+            className="w-full rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 outline-none cursor-pointer transition hover:bg-indigo-100 focus:ring-2 focus:ring-indigo-400"
+          >
+            <option value="" disabled hidden>
+              Update status
+            </option>
+
+            {STATUSES.filter((s) => s.id !== task.status).map((s) => (
+              <option
+                key={s.id}
+                value={s.id}
+                className="text-gray-800 bg-white"
+              >
+                Move to {s.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

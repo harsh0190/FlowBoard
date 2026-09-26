@@ -1,5 +1,9 @@
 import express from "express";
 
+import mongoose from "mongoose";
+
+import { redis } from "./config/redis";
+
 import cors from "cors";
 
 import helmet from "helmet";
@@ -27,12 +31,10 @@ const app = express();
 app.use(
   cors({
     origin: ["http://localhost:5173", process.env.CLIENT_URL as string],
-
     credentials: true,
-
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],
+    exposedHeaders: ["Idempotent-Replay"],
   }),
 );
 
@@ -55,6 +57,14 @@ app.use(
 app.get("/", (req, res) => {
   res.json({
     message: "Project SaaS API Running 🚀",
+  });
+});
+
+app.get("/health", async (req, res) => {
+  res.json({
+    status: "ok",
+    mongo: mongoose.connection.readyState === 1,
+    redis: (await redis.ping().catch(() => null)) === "PONG",
   });
 });
 

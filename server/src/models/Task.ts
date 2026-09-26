@@ -29,6 +29,9 @@ export interface ITask extends Document {
 
   createdAt: Date;
   updatedAt: Date;
+
+  version: number;
+  overdueNotified: boolean;
 }
 
 const commentSchema = new Schema<IComment>(
@@ -111,6 +114,16 @@ const taskSchema = new Schema<ITask>(
     comments: {
       type: [commentSchema],
       default: [],
+    },
+
+    version: {
+      type: Number,
+      default: 0,
+    },
+
+    overdueNotified: {
+      type: Boolean,
+      default: false,
     },
   },
   {
