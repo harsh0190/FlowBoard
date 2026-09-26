@@ -1,4 +1,6 @@
-# 🚀 FlowBoard - Project Management SaaS
+# 📋 FlowBoard - Project Management SaaS
+
+![CI](https://github.com/harsh0190/FlowBoard/actions/workflows/ci.yml/badge.svg)
 
 FlowBoard is a full-stack **Project Management SaaS** platform built with the **MERN Stack**, **Redis**, and **Socket.IO**.  
 It helps teams manage workspaces, projects, tasks, members, and real-time collaboration using a Kanban workflow, with safe concurrent editing, activity tracking, overdue alerts, and an AI-powered weekly project digest.
@@ -54,6 +56,8 @@ It helps teams manage workspaces, projects, tasks, members, and real-time collab
 
 **Backend:** Node.js, Express.js, TypeScript, MongoDB, Mongoose, Redis, BullMQ, JWT, Bcrypt, Socket.IO
 
+**DevOps:** Docker, Docker Compose, GitHub Actions (CI)
+
 **AI:** Vercel AI SDK with Groq
 
 ---
@@ -63,13 +67,27 @@ It helps teams manage workspaces, projects, tasks, members, and real-time collab
 ```bash
 # Clone the repository
 git clone https://github.com/harsh0190/FlowBoard.git
+cd FlowBoard
+```
 
-# Install dependencies
-cd client && npm install
-cd ../server && npm install
+### Option 1: 💻 Run locally
 
-# Start development servers
+```bash
+# Server (terminal 1)
+cd server
+npm install
 npm run dev
+
+# Client (terminal 2)
+cd client
+npm install
+npm run dev
+```
+
+### Option 2: 🐳 Run with Docker
+
+```bash
+docker compose up --build
 ```
 
 ---
